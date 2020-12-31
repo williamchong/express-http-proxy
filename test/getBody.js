@@ -128,6 +128,28 @@ describe('when proxy request is a GET', function () {
       .end(done);
   });
 
+  it('should deliver empty get body', function (done) {
+    var nockedPostWithoutBody = nock('http://127.0.0.1:12345')
+      .get('/', '')
+      .matchHeader('Content-Type', 'application/json')
+      .reply(200, {
+        name: 'get with object body'
+      });
+
+    localServer.use('/proxy', proxy('http://127.0.0.1:12345'));
+    localServer.use(function (req, res) { res.sendStatus(200); });
+    localServer.use(function (err, req, res, next) { throw new Error(err, req, res, next); });
+
+    request(localServer)
+      .get('/proxy')
+      .set('Content-Type', 'application/json')
+      .expect(function (res) {
+        assert(res.body.name === 'get with object body');
+        nockedPostWithoutBody.done();
+      })
+      .end(done);
+  });
+
   it('should support parseReqBody', function (done) {
     var nockedPostWithBody = nock('http://127.0.0.1:12345')
       .get('/', '')
